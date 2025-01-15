@@ -1,0 +1,22 @@
+2025/01/16 02:01:59 socat[1572] N PTY is /dev/ttys000
+2025/01/16 02:01:59 socat[1572] N PTY is /dev/ttys003
+2025/01/16 02:01:59 socat[1572] N starting data transfer loop with FDs [5,5] and [7,7]
+2025/01/16 02:02:01 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:02 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:03 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:04 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:05 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:06 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:07 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:08 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:09 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:10 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:11 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:12 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:13 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:14 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:15 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:16 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:17 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:18 socat[1572] N write(7, 0x7f8ce9809000, 10) completed
+2025/01/16 02:02:19 socat[1572] N write(7, 0x7f8ce9809000, 10) completed

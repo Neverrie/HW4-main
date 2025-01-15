@@ -8,7 +8,13 @@
 #include <sstream>
 #include <mutex>
 #include <algorithm>
+
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <unistd.h>
+#include <fcntl.h>
+#endif
 
 std::mutex logMutex;
 bool running = true;
@@ -26,10 +32,7 @@ void logTemperature(const std::string& message, const std::string& filename) {
     std::lock_guard<std::mutex> lock(logMutex);
     std::ofstream logFile(filename, std::ios::app);
     if (logFile.is_open()) {
-        std::cout << "Запись в лог: " << message << std::endl; // Отладочный вывод
         logFile << message << std::endl;
-    } else {
-        std::cerr << "Ошибка открытия файла: " << filename << std::endl;
     }
 }
 
@@ -78,11 +81,6 @@ void cleanOldLogs(const std::string& filename, int maxAgeSeconds) {
 
 void clearLogFile(const std::string& filename) {
     std::ofstream file(filename, std::ios::trunc);
-    if (!file.is_open()) {
-        std::cerr << "Ошибка очистки файла: " << filename << std::endl;
-    } else {
-        std::cout << "Файл очищен: " << filename << std::endl;
-    }
 }
 
 void inputListener() {
@@ -93,13 +91,13 @@ void inputListener() {
             running = false;
             std::cout << "Завершение работы программы..." << std::endl;
         }
-        std::cout << "InputListener: получен ввод: " << input << std::endl;
     }
 }
 
-void readTemperature(const std::string& pipeName) {
+void readTemperature(const std::string& port) {
+#ifdef _WIN32
     HANDLE hPipe = CreateFile(
-        pipeName.c_str(),
+        port.c_str(),
         GENERIC_READ,
         0,
         NULL,
@@ -109,11 +107,20 @@ void readTemperature(const std::string& pipeName) {
     );
 
     if (hPipe == INVALID_HANDLE_VALUE) {
-        std::cerr << "Ошибка открытия канала! Код ошибки: " << GetLastError() << std::endl;
+        std::cerr << "Ошибка открытия канала на Windows! Код ошибки: " << GetLastError() << std::endl;
         return;
     }
 
-    std::cout << "Канал успешно открыт: " << pipeName << std::endl;
+    std::cout << "Канал успешно открыт: " << port << std::endl;
+#else
+    int fd = open(port.c_str(), O_RDONLY);
+    if (fd < 0) {
+        std::cerr << "Ошибка открытия порта на macOS/Linux!" << std::endl;
+        return;
+    }
+
+    std::cout << "Порт успешно открыт: " << port << std::endl;
+#endif
 
     std::vector<float> hourlyTemperatures;
     std::vector<float> dailyTemperatures;
@@ -122,25 +129,25 @@ void readTemperature(const std::string& pipeName) {
 
     while (running) {
         char buffer[256];
+#ifdef _WIN32
         DWORD bytesRead;
-        bool success = ReadFile(
-            hPipe,
-            buffer,
-            sizeof(buffer) - 1,
-            &bytesRead,
-            NULL
-        );
+        bool success = ReadFile(hPipe, buffer, sizeof(buffer), &bytesRead, NULL);
+        if (!success) {
+            std::cerr << "Ошибка чтения из канала на Windows! Код ошибки: " << GetLastError() << std::endl;
+            break;
+        }
+#else
+        ssize_t bytesRead = read(fd, buffer, sizeof(buffer));
+        if (bytesRead < 0) {
+            std::cerr << "Ошибка чтения из порта на macOS/Linux!" << std::endl;
+            break;
+        }
+#endif
 
-        if (success && bytesRead > 0) {
+        if (bytesRead > 0) {
             buffer[bytesRead] = '\0';
             float temperature = std::atof(buffer);
-            if (temperature == 0.0f && buffer[0] != '0') {
-                std::cerr << "Ошибка преобразования температуры: " << buffer << std::endl;
-                continue;
-            }
-
             std::string logMessage = getCurrentTime() + " - Температура: " + std::to_string(temperature);
-            std::cout << "Получена температура: " << temperature << std::endl; // Отладочный вывод
             logTemperature(logMessage, "temperature.log");
 
             hourlyTemperatures.push_back(temperature);
@@ -164,19 +171,21 @@ void readTemperature(const std::string& pipeName) {
             }
 
             cleanOldLogs("temperature.log", 24 * 60 * 60);
-        } else {
-            std::cerr << "Ошибка чтения из канала! Код ошибки: " << GetLastError() << std::endl;
         }
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
+#ifdef _WIN32
     CloseHandle(hPipe);
+#else
+    close(fd);
+#endif
 }
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Использование: " << argv[0] << " <имя канала>" << std::endl;
+        std::cerr << "Использование: " << argv[0] << " <порт>" << std::endl;
         return 1;
     }
 
@@ -184,18 +193,11 @@ int main(int argc, char* argv[]) {
     clearLogFile("hourly_average.log");
     clearLogFile("daily_average.log");
 
-    std::string pipeName = argv[1];
+    std::string port = argv[1];
 
     std::thread inputThread(inputListener);
-
-    // Задержка перед подключением к каналу
-    std::cout << "Ожидание создания канала..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::seconds(5)); // Задержка 5 секунд
-
-    readTemperature(pipeName);
+    readTemperature(port);
 
     inputThread.join();
-
-    std::this_thread::sleep_for(std::chrono::seconds(5)); // Задержка перед завершением
     return 0;
 }
